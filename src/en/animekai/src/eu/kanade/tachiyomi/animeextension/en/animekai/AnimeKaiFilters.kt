@@ -5,8 +5,8 @@ import eu.kanade.tachiyomi.animesource.model.AnimeFilterList
 import java.util.Calendar
 
 object AnimeKaiFilters {
-    fun getFilterList(): AnimeFilterList {
-        return AnimeFilterList(
+    fun getFilterList(): AnimeFilterList =
+        AnimeFilterList(
             listOf(
                 TypeGroup(),
                 GenreGroup(),
@@ -19,9 +19,11 @@ object AnimeKaiFilters {
                 YearGroup(),
             ),
         )
-    }
 
-    enum class SortOption(val displayName: String, val id: String) {
+    enum class SortOption(
+        val displayName: String,
+        val id: String,
+    ) {
         AUTO("Auto", "auto"),
         MOST_RELEVANCE("Most Relevance", "most_relevance"),
         UPDATED_DATE("Updated Date", "updated_date"),
@@ -52,8 +54,15 @@ object AnimeKaiFilters {
         }
     }
 
-    class IdCheckBox(val id: String, name: String = id) : AnimeFilter.CheckBox(name)
-    class IdTriState(val id: String, name: String = id) : AnimeFilter.TriState(name)
+    class IdCheckBox(
+        val id: String,
+        name: String = id,
+    ) : AnimeFilter.CheckBox(name)
+
+    class IdTriState(
+        val id: String,
+        name: String = id,
+    ) : AnimeFilter.TriState(name)
 
     // IDs pulled directly from the website's HTML source manually.
     // If the IDs change, the filters will need to be updated.
@@ -122,11 +131,10 @@ object AnimeKaiFilters {
             ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "status[]=${filter.id}" else null
             }
-        }
     }
 
     class TypeGroup :
@@ -142,11 +150,10 @@ object AnimeKaiFilters {
             ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "type[]=${filter.id}" else null
             }
-        }
     }
 
     class SeasonGroup :
@@ -161,11 +168,10 @@ object AnimeKaiFilters {
             ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "season[]=${filter.id}" else null
             }
-        }
     }
 
     class LanguageGroup :
@@ -179,11 +185,10 @@ object AnimeKaiFilters {
             ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "language[]=${filter.id}" else null
             }
-        }
     }
 
     class CountryGroup :
@@ -195,11 +200,10 @@ object AnimeKaiFilters {
             ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "country[]=${filter.id}" else null
             }
-        }
     }
 
     class RatingGroup :
@@ -215,11 +219,10 @@ object AnimeKaiFilters {
             ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "rating[]=${filter.id}" else null
             }
-        }
     }
 
     class YearGroup :
@@ -240,11 +243,10 @@ object AnimeKaiFilters {
                 ),
         ),
         KaiFilter {
-        override fun getParams(): List<String> {
-            return state.mapNotNull { filter ->
+        override fun getParams(): List<String> =
+            state.mapNotNull { filter ->
                 if (filter.state) "year[]=${filter.id}" else null
             }
-        }
     }
 
     interface KaiFilter {

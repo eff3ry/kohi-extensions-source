@@ -16,7 +16,9 @@ import uy.kohesive.injekt.injectLazy
 import java.net.URL
 import kotlin.getValue
 
-class MegaUp(private val client: OkHttpClient) {
+class MegaUp(
+    private val client: OkHttpClient,
+) {
     private val context: Application by injectLazy()
     private val handler by lazy { Handler(Looper.getMainLooper()) }
     private val tag = "AnimeKaiMegaUp"
@@ -38,35 +40,47 @@ class MegaUp(private val client: OkHttpClient) {
         referer: String? = null,
     ): List<Video> {
         val parsedUrl = URL(url)
-        val baseUrl = buildString {
-            append(parsedUrl.protocol)
-            append("://")
-            append(parsedUrl.host)
-            if (parsedUrl.port != -1 && parsedUrl.port != parsedUrl.defaultPort) {
-                append(":").append(parsedUrl.port)
+        val baseUrl =
+            buildString {
+                append(parsedUrl.protocol)
+                append("://")
+                append(parsedUrl.host)
+                if (parsedUrl.port != -1 && parsedUrl.port != parsedUrl.defaultPort) {
+                    append(":").append(parsedUrl.port)
+                }
             }
-        }
         val pathSegments = parsedUrl.path.split("/").filter { it.isNotEmpty() }
-        val token = pathSegments.lastOrNull()?.substringBefore("?")
-            ?: throw IllegalArgumentException("No token found in URL: $url")
+        val token =
+            pathSegments.lastOrNull()?.substringBefore("?")
+                ?: throw IllegalArgumentException("No token found in URL: $url")
         val reqUrl = "$baseUrl/media/$token"
-        val response = client.newCall(okhttp3.Request.Builder().url(reqUrl).build()).execute()
+        val response =
+            client
+                .newCall(
+                    okhttp3.Request
+                        .Builder()
+                        .url(reqUrl)
+                        .build(),
+                ).execute()
         val responseBody = response.body.string()
         val megaToken = JSONObject(responseBody).getString("result")
         val postBody = MegaDecodePostBody(megaToken, userAgent)
-        val postRequest = okhttp3.Request.Builder()
-            .url("https://enc-dec.app/api/dec-mega")
-            .post(
-                Json.encodeToString(MegaDecodePostBody.serializer(), postBody)
-                    .toRequestBody("application/json".toMediaTypeOrNull()),
-            )
-            .build()
+        val postRequest =
+            okhttp3.Request
+                .Builder()
+                .url("https://enc-dec.app/api/dec-mega")
+                .post(
+                    Json
+                        .encodeToString(MegaDecodePostBody.serializer(), postBody)
+                        .toRequestBody("application/json".toMediaTypeOrNull()),
+                ).build()
         val postResponse = client.newCall(postRequest).execute()
         val postResponseBody = postResponse.body.string()
         val decodedResult = JSONObject(postResponseBody).getString("result")
         val megaUpResult = Json.decodeFromString<MegaUpResult>(decodedResult)
-        val masterPlaylistUrl = megaUpResult.sources.firstOrNull { it.file.contains("list") && it.file.endsWith(".m3u8") }?.file
-            ?: megaUpResult.sources.firstOrNull()?.file
+        val masterPlaylistUrl =
+            megaUpResult.sources.firstOrNull { it.file.contains("list") && it.file.endsWith(".m3u8") }?.file
+                ?: megaUpResult.sources.firstOrNull()?.file
         val subtitleTracks = buildSubtitleTracks(megaUpResult)
         return buildVideoResults(masterPlaylistUrl, url, subtitleTracks, qualityPrefix, url, userAgent, referer)
     }
@@ -74,12 +88,11 @@ class MegaUp(private val client: OkHttpClient) {
     /**
      * Builds a list of subtitle tracks from the MegaUpResult.
      */
-    private fun buildSubtitleTracks(megaUpResult: MegaUpResult): List<Track> {
-        return megaUpResult.tracks
+    private fun buildSubtitleTracks(megaUpResult: MegaUpResult): List<Track> =
+        megaUpResult.tracks
             .filter { it.kind == "captions" && it.file.endsWith(".vtt") }
             .sortedByDescending { it.default }
             .map { Track(it.file, it.label ?: "Unknown") }
-    }
 
     /**
      * Builds a list of Video objects from the playlist, validating each candidate for accessibility and codec info.
@@ -95,13 +108,23 @@ class MegaUp(private val client: OkHttpClient) {
     ): MutableList<Video> {
         val videoResults = mutableListOf<Video>()
         val prefix = qualityPrefix ?: "MegaUp - "
-        val headers = Headers.Builder().apply {
-            add("User-Agent", userAgent)
-            if (!referer.isNullOrBlank()) add("Referer", referer)
-        }.build()
+        val headers =
+            Headers
+                .Builder()
+                .apply {
+                    add("User-Agent", userAgent)
+                    if (!referer.isNullOrBlank()) add("Referer", referer)
+                }.build()
         try {
             val playlistUrl = masterPlaylistUrl ?: reqUrl
-            val playlistResponse = client.newCall(okhttp3.Request.Builder().url(playlistUrl).build()).execute()
+            val playlistResponse =
+                client
+                    .newCall(
+                        okhttp3.Request
+                            .Builder()
+                            .url(playlistUrl)
+                            .build(),
+                    ).execute()
             val playlistContent = playlistResponse.body.string().orEmpty()
             if (playlistContent.contains("#EXT-X-STREAM-INF")) {
                 val lines = playlistContent.lines()
@@ -117,24 +140,38 @@ class MegaUp(private val client: OkHttpClient) {
                         val currentCodecs = codecsMatch?.groupValues?.getOrNull(1)
                         val streamUrl = lines.getOrNull(i + 1)?.trim()
                         if (!streamUrl.isNullOrEmpty() && currentQuality != null) {
-                            val absoluteUrl = if (streamUrl.startsWith("http")) streamUrl else playlistUrl.substringBeforeLast("/") + "/" + streamUrl
+                            val absoluteUrl =
+                                if (streamUrl.startsWith("http")) {
+                                    streamUrl
+                                } else {
+                                    playlistUrl.substringBeforeLast("/") + "/" +
+                                        streamUrl
+                                }
                             val qualityWithCodec = currentQuality + (if (currentCodecs != null) " [$currentCodecs]" else "")
                             try {
-                                val testResponse = client.newCall(okhttp3.Request.Builder().url(absoluteUrl).build()).execute()
+                                val testResponse =
+                                    client
+                                        .newCall(
+                                            okhttp3.Request
+                                                .Builder()
+                                                .url(absoluteUrl)
+                                                .build(),
+                                        ).execute()
                                 val testContent = testResponse.body.string().orEmpty()
                                 val isMaster = testContent.contains("#EXT-X-STREAM-INF")
                                 val isMedia = testContent.contains("#EXTINF")
                                 if (isMaster || isMedia) {
-                                    videoResults.add(
-                                        Video(
-                                            originalUrl,
-                                            "$prefix$qualityWithCodec",
-                                            absoluteUrl,
-                                            headers,
-                                            subtitleTracks,
-                                            emptyList(),
-                                        ),
-                                    )
+                                    // videoResults.add(
+                                    // TODO: Replace Deprecated
+//                                        Video(
+//                                            originalUrl,
+//                                            "$prefix$qualityWithCodec",
+//                                            absoluteUrl,
+//                                            headers,
+//                                            subtitleTracks,
+//                                            emptyList(),
+//                                        ),
+                                    // )
                                 }
                             } catch (_: Exception) {
                                 // Ignore and skip this entry if fetching fails
